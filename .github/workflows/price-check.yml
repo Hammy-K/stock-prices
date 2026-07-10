@@ -1,0 +1,35 @@
+name: Price dip check
+
+on:
+  schedule:
+    # Hourly 07:00–20:00 UTC Mon–Fri = 10:00–23:00 AST
+    # (covers SIX Swiss open through NYSE close)
+    - cron: "0 7-20 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: price-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run price check
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python3 check_prices.py
+
+      - name: Persist state
+        run: |
+          git config user.name "price-dip-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add state.json price_log.csv
+          git diff --cached --quiet || git commit -m "price check $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin main || true
+          git push

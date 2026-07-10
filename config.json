@@ -1,0 +1,25 @@
+{
+  "tickers": {
+    "URTH": {
+      "symbol": "URTH",
+      "currency": "USD",
+      "mode": "auto",
+      "manual_target": null,
+      "auto_lookback_days": 30,
+      "auto_proximity_pct": 0.5,
+      "min_data_days": 4,
+      "max_quote_age_hours": 3
+    },
+    "EQQQ": {
+      "symbol": "EQQQ.SW",
+      "currency": "USD",
+      "mode": "auto",
+      "manual_target": null,
+      "auto_lookback_days": 7,
+      "auto_proximity_pct": 0.5,
+      "min_data_days": 4,
+      "max_quote_age_hours": 3
+    }
+  },
+  "_help": "mode: 'auto' (alert near rolling low), 'manual' (alert when price <= manual_target), or 'paused'. Edit this file on github.com to change thresholds — takes effect on the next hourly run."
+}
