@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 URTH / EQQQ dip-alert checker — runs hourly via GitHub Actions.
-Fetches prices from Yahoo Finance, applies dip logic, posts to Slack webhook.
+Fetches prices from Yahoo Finance, applies dip logic, and on a dip opens
+a GitHub issue — GitHub then notifies by email/mobile push. No issue,
+no noise.
 State persists via git commits (state.json, price_log.csv).
 """
 import csv
@@ -49,13 +51,22 @@ def fetch_yahoo(symbol, range_="2mo"):
     return None
 
 
-def send_slack(webhook_url, text):
-    body = json.dumps({"text": text}).encode()
+def send_alert(title, body):
+    """Open a GitHub issue; GitHub emails/pushes the notification."""
+    repo = os.environ["GITHUB_REPOSITORY"]
+    token = os.environ["GITHUB_TOKEN"]
+    mention = os.environ.get("MENTION_USER", "").strip()
+    if mention:
+        body += f"\n\ncc @{mention}"
+    payload = json.dumps({"title": title, "body": body}).encode()
     req = urllib.request.Request(
-        webhook_url, data=body,
-        headers={"Content-Type": "application/json"})
+        f"https://api.github.com/repos/{repo}/issues", data=payload,
+        headers={"Authorization": f"Bearer {token}",
+                 "Accept": "application/vnd.github+json",
+                 "Content-Type": "application/json",
+                 "User-Agent": "price-dip-bot"})
     with urllib.request.urlopen(req, timeout=30) as r:
-        return r.status == 200
+        return r.status in (200, 201)
 
 
 def append_log(ticker, price, currency, source):
@@ -69,9 +80,9 @@ def append_log(ticker, price, currency, source):
 
 
 def main():
-    webhook = os.environ.get("SLACK_WEBHOOK_URL")
-    if not webhook:
-        print("SLACK_WEBHOOK_URL not set", file=sys.stderr)
+    if not os.environ.get("GITHUB_TOKEN") or not os.environ.get(
+            "GITHUB_REPOSITORY"):
+        print("GITHUB_TOKEN / GITHUB_REPOSITORY not set", file=sys.stderr)
         sys.exit(1)
 
     with open(CONFIG_FILE) as f:
@@ -151,17 +162,22 @@ def main():
                       f"{last_at}, price not >0.5% lower)")
                 continue
 
-        msg = (f":chart_with_downwards_trend: *{ticker} dip alert — "
-               f"${price:.2f}*\n"
-               f"Trigger: {reason}\n"
-               f"_To change: edit config.json in the repo "
-               f"(mode: manual + manual_target, or mode: auto)._")
-        if send_slack(webhook, msg):
+        title = f"📉 {ticker} dip alert — ${price:.2f}"
+        body = (f"**Trigger:** {reason}\n\n"
+                f"**Price:** ${price:.2f} "
+                f"(quote time {mkt_time:%Y-%m-%d %H:%M} UTC)\n\n"
+                f"To change thresholds, edit `config.json` "
+                f"(`mode: manual` + `manual_target`, or `mode: auto`). "
+                f"Close this issue whenever — it has no effect on the bot.")
+        try:
+            sent = send_alert(title, body)
+        except Exception as e:  # noqa: BLE001
+            print(f"{ticker}: issue creation failed: {e}", file=sys.stderr)
+            sent = False
+        if sent:
             print(f"{ticker}: ALERT SENT at ${price}")
             st["last_alert_at"] = now_utc().isoformat(timespec="seconds")
             st["last_alert_price"] = price
-        else:
-            print(f"{ticker}: Slack webhook failed", file=sys.stderr)
 
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)

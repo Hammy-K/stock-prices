@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: price-check
@@ -22,7 +23,8 @@ jobs:
 
       - name: Run price check
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MENTION_USER: ${{ github.repository_owner }}
         run: python3 check_prices.py
 
       - name: Persist state
