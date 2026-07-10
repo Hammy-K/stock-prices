@@ -1,0 +1,3 @@
+timestamp,ticker,price,currency,source
+2026-07-10T23:13:37+00:00,URTH,204.63,USD,yahoo:URTH
+2026-07-10T23:13:37+00:00,EQQQ,727.3,USD,yahoo:EQQQ.SW
