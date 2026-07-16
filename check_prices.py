@@ -25,7 +25,7 @@ def now_utc():
     return datetime.now(timezone.utc)
 
 
-def fetch_yahoo(symbol, range_="2mo"):
+def fetch_yahoo(symbol, range_="3mo"):
     """Return (current_price, market_time_utc, [(date, close), ...]) or None."""
     for host in YAHOO_HOSTS:
         url = (f"https://{host}/v8/finance/chart/{symbol}"
@@ -67,6 +67,69 @@ def send_alert(title, body):
                  "User-Agent": "price-dip-bot"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.status in (200, 201)
+
+
+def evaluate_signals(price, history, cfg):
+    """Return a list of human-readable reasons for every signal that fired.
+
+    Three independent dip signals, each tunable per ticker in config.json:
+    - rolling_low: price at/near the N-day low (catches absolute lows)
+    - drawdown:    price fell >= X% from the N-day high (catches pullbacks
+                   in uptrends that never make a new absolute low)
+    - zscore:      price is K standard deviations below the N-day mean
+                   (volatility-adjusted: a small drop in a calm market can
+                   be more unusual than a big drop in a choppy one)
+    """
+    sig = cfg.get("signals", {})
+    today = now_utc().date()
+    past = [(d, c) for d, c in history if d < today]  # exclude partial bar
+    fired = []
+
+    def closes_within(days):
+        cutoff = today - timedelta(days=days)
+        return [(d, c) for d, c in past if d >= cutoff]
+
+    rl = sig.get("rolling_low", {})
+    if rl.get("enabled", True):
+        days = rl.get("lookback_days", 7)
+        w = closes_within(days)
+        if len(w) >= rl.get("min_data_days", 4):
+            low_date, low = min(w, key=lambda x: x[1])
+            hi = max(c for _, c in w)
+            prox = rl.get("proximity_pct", 0.5)
+            # Range guard: in a flat market everything is "near the low",
+            # so only fire if the window actually saw a meaningful drop.
+            min_range = rl.get("min_range_pct", 1.5)
+            if (hi >= low * (1 + min_range / 100)
+                    and price <= low * (1 + prox / 100)):
+                fired.append(f"rolling low — within {prox}% of the "
+                             f"{days}-day low (${low:.2f} on {low_date})")
+
+    dd = sig.get("drawdown", {})
+    if dd.get("enabled", True):
+        days = dd.get("lookback_days", 30)
+        w = [c for _, c in closes_within(days)]
+        if len(w) >= dd.get("min_data_days", 10):
+            hi = max(w)
+            drop = (hi - price) / hi * 100
+            if drop >= dd.get("drop_pct", 3.0):
+                fired.append(f"drawdown — {drop:.1f}% below the "
+                             f"{days}-day high (${hi:.2f})")
+
+    zs = sig.get("zscore", {})
+    if zs.get("enabled", True):
+        days = zs.get("lookback_days", 20)
+        w = [c for _, c in closes_within(days)]
+        if len(w) >= zs.get("min_data_days", 15):
+            mean = sum(w) / len(w)
+            std = (sum((x - mean) ** 2 for x in w) / len(w)) ** 0.5
+            if std > 0:
+                z = (price - mean) / std
+                if z <= -zs.get("threshold", 2.0):
+                    fired.append(f"z-score — {abs(z):.1f}σ below the "
+                                 f"{days}-day average (${mean:.2f})")
+
+    return fired
 
 
 def append_log(ticker, price, currency, source):
@@ -118,31 +181,15 @@ def main():
             continue
 
         # --- trigger logic ---
-        triggered, reason = False, ""
+        triggered, fired = False, []
         if mode == "manual":
             target = cfg.get("manual_target")
             if target is not None and price <= target:
                 triggered = True
-                reason = f"manual target ${target}"
-        else:  # auto
-            lookback = cfg.get("auto_lookback_days", 7)
-            prox = cfg.get("auto_proximity_pct", 0.5)
-            cutoff = now_utc().date() - timedelta(days=lookback)
-            window = [(d, c) for d, c in history if d >= cutoff]
-            # exclude today's (partial) bar from the reference low
-            ref = [(d, c) for d, c in window if d < now_utc().date()]
-            if len(ref) < cfg.get("min_data_days", 4):
-                print(f"{ticker}: only {len(ref)} days of history in window "
-                      f"— skipping auto check")
-                continue
-            low_date, low = min(ref, key=lambda x: x[1])
-            if price <= low * (1 + prox / 100):
-                triggered = True
-                avg = sum(c for _, c in ref) / len(ref)
-                below_avg = (avg - price) / avg * 100
-                reason = (f"within {prox}% of the {lookback}-day low "
-                          f"(${low:.2f} on {low_date}) — "
-                          f"{below_avg:.1f}% below the {lookback}-day average")
+                fired = [f"manual target ${target}"]
+        else:  # auto: evaluate independent signals; any one triggers
+            fired = evaluate_signals(price, history, cfg)
+            triggered = bool(fired)
 
         if not triggered:
             print(f"{ticker}: ${price} — no trigger")
@@ -162,8 +209,10 @@ def main():
                       f"{last_at}, price not >0.5% lower)")
                 continue
 
-        title = f"📉 {ticker} dip alert — ${price:.2f}"
-        body = (f"**Trigger:** {reason}\n\n"
+        strength = f" ({len(fired)}/3 signals)" if mode == "auto" else ""
+        title = f"📉 {ticker} dip alert — ${price:.2f}{strength}"
+        reasons = "\n".join(f"- {r}" for r in fired)
+        body = (f"**Signals fired:**\n\n{reasons}\n\n"
                 f"**Price:** ${price:.2f} "
                 f"(quote time {mkt_time:%Y-%m-%d %H:%M} UTC)\n\n"
                 f"To change thresholds, edit `config.json` "

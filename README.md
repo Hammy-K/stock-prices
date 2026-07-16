@@ -20,7 +20,17 @@ Edit `config.json` on github.com (pencil icon → commit). Takes effect next hou
 - Back to auto dip detection: `"mode": "auto"`
 - Stop one ticker: `"mode": "paused"`
 
-Auto mode alerts when price comes within `auto_proximity_pct` (0.5%) of the rolling low (URTH: 30-day, EQQQ: 7-day).
+## Auto mode: three independent dip signals
+
+Any enabled signal firing = one alert (the issue lists which ones fired — more signals agreeing = stronger dip):
+
+| Signal | Fires when | Catches |
+|---|---|---|
+| `rolling_low` | price within `proximity_pct` of the N-day low (URTH 30d, EQQQ 7d) — only if the window actually dropped ≥ `min_range_pct` | absolute lows |
+| `drawdown` | price ≥ `drop_pct` (3%) below the N-day high | pullbacks in uptrends that never make a new low |
+| `zscore` | price ≥ `threshold` (2σ) below the N-day mean | statistically unusual drops — volatility-aware, so a small drop in a calm market can fire while the same drop in a choppy market stays silent |
+
+Tune or disable each per ticker in `config.json` (`"enabled": false`).
 
 ## Notes
 

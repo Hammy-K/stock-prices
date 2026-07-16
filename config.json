@@ -5,21 +5,25 @@
       "currency": "USD",
       "mode": "auto",
       "manual_target": null,
-      "auto_lookback_days": 30,
-      "auto_proximity_pct": 0.5,
-      "min_data_days": 4,
-      "max_quote_age_hours": 3
+      "max_quote_age_hours": 3,
+      "signals": {
+        "rolling_low": {"enabled": true, "lookback_days": 30, "proximity_pct": 0.5, "min_range_pct": 1.5, "min_data_days": 4},
+        "drawdown": {"enabled": true, "lookback_days": 30, "drop_pct": 3.0, "min_data_days": 10},
+        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15}
+      }
     },
     "EQQQ": {
       "symbol": "EQQQ.SW",
       "currency": "USD",
       "mode": "auto",
       "manual_target": null,
-      "auto_lookback_days": 7,
-      "auto_proximity_pct": 0.5,
-      "min_data_days": 4,
-      "max_quote_age_hours": 3
+      "max_quote_age_hours": 3,
+      "signals": {
+        "rolling_low": {"enabled": true, "lookback_days": 7, "proximity_pct": 0.5, "min_range_pct": 1.5, "min_data_days": 4},
+        "drawdown": {"enabled": true, "lookback_days": 30, "drop_pct": 3.0, "min_data_days": 10},
+        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15}
+      }
     }
   },
-  "_help": "mode: 'auto' (alert near rolling low), 'manual' (alert when price <= manual_target), or 'paused'. Edit this file on github.com to change thresholds — takes effect on the next hourly run."
+  "_help": "mode: 'auto' (any enabled signal triggers an alert), 'manual' (price <= manual_target), or 'paused'. Signals: rolling_low = at/near N-day low; drawdown = drop_pct% off the N-day high; zscore = threshold std-devs below the N-day mean. Disable one with enabled: false. Edits take effect next hourly run."
 }
