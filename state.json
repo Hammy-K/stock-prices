@@ -1,6 +1,10 @@
 {
   "EQQQ": {
-    "last_alert_at": "2026-07-27T10:47:33+00:00",
-    "last_alert_price": 698.9
+    "last_alert_at": "2026-07-27T16:25:05+00:00",
+    "last_alert_price": 681.5
+  },
+  "URTH": {
+    "last_alert_at": "2026-07-27T16:25:05+00:00",
+    "last_alert_price": 200.803
   }
 }
