@@ -9,7 +9,8 @@
       "signals": {
         "rolling_low": {"enabled": true, "lookback_days": 30, "proximity_pct": 0.5, "min_range_pct": 1.5, "min_data_days": 4},
         "drawdown": {"enabled": true, "lookback_days": 30, "drop_pct": 3.0, "min_data_days": 10},
-        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15}
+        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15},
+        "rebound": {"enabled": true, "lookback_days": 30, "min_drop_pct": 4.0, "rebound_pct": 1.5, "episode_end_recovery_pct": 1.0, "min_data_days": 10}
       }
     },
     "EQQQ": {
@@ -21,7 +22,8 @@
       "signals": {
         "rolling_low": {"enabled": true, "lookback_days": 7, "proximity_pct": 0.5, "min_range_pct": 1.5, "min_data_days": 4},
         "drawdown": {"enabled": true, "lookback_days": 30, "drop_pct": 3.0, "min_data_days": 10},
-        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15}
+        "zscore": {"enabled": true, "lookback_days": 20, "threshold": 2.0, "min_data_days": 15},
+        "rebound": {"enabled": true, "lookback_days": 30, "min_drop_pct": 4.0, "rebound_pct": 1.5, "episode_end_recovery_pct": 1.0, "min_data_days": 10}
       }
     }
   },

@@ -32,6 +32,12 @@ Any enabled signal firing = one alert (the issue lists which ones fired — more
 
 Tune or disable each per ticker in `config.json` (`"enabled": false`).
 
+## 🟢 Rebound signal ("has the dip bottomed?")
+
+Separate from the 📉 dip alerts. Once a decline of ≥ `min_drop_pct` (4%) from the 30-day peak begins, the bot tracks the lowest price it observes (hourly, so it sees intraday troughs). When price turns up ≥ `rebound_pct` (1.5%) off that trough, it opens a 🟢 issue — the closest thing to a "bottom is in" alert. If a **new** low forms afterwards, the signal re-arms and fires again at the next turn. The episode closes when price recovers to within 1% of the peak.
+
+The trade-off is explicit: you never buy the exact bottom (you pay ~1.5% for confirmation), but you stop catching falling knives. Both alert types include a **Buy context** line (drawdown from 3-month high, position in the 3-month range, distance from the 3-month average) to help judge entry quality at a glance.
+
 ## Notes
 
 - Schedule: hourly 10:00–23:00 KSA time, Mon–Fri (GitHub cron can lag 5–15 min).

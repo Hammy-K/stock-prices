@@ -132,6 +132,83 @@ def evaluate_signals(price, history, cfg):
     return fired
 
 
+def evaluate_rebound(price, history, cfg, st):
+    """Detect the turn off a trough during a decline episode.
+
+    An episode starts when price falls >= min_drop_pct from the N-day peak.
+    While it runs we track the lowest observed price (hourly granularity).
+    When price bounces >= rebound_pct off that trough, fire ONCE — unless a
+    new, deeper trough forms, which re-arms the signal. The episode ends
+    when price recovers to within episode_end_recovery_pct of the peak.
+
+    Returns a reason string when the rebound fires, else None. Mutates
+    st["episode"].
+    """
+    rb = cfg.get("signals", {}).get("rebound", {})
+    if not rb.get("enabled", True):
+        return None
+    lookback = rb.get("lookback_days", 30)
+    min_drop = rb.get("min_drop_pct", 4.0)
+    bounce = rb.get("rebound_pct", 1.5)
+    recover = rb.get("episode_end_recovery_pct", 1.0)
+
+    today = now_utc().date()
+    cutoff = today - timedelta(days=lookback)
+    past = [c for d, c in history if cutoff <= d < today]
+    if len(past) < rb.get("min_data_days", 10):
+        return None
+    peak = max(past + [price])
+
+    ep = st.get("episode") or {}
+    if not ep.get("active"):
+        drop = (peak - price) / peak * 100
+        if drop >= min_drop:
+            st["episode"] = {
+                "active": True, "peak": peak, "trough": price,
+                "trough_at": now_utc().isoformat(timespec="seconds"),
+                "rebound_alerted": False}
+        return None
+
+    if price < ep["trough"]:
+        ep["trough"] = price
+        ep["trough_at"] = now_utc().isoformat(timespec="seconds")
+        ep["rebound_alerted"] = False  # deeper trough re-arms the signal
+        return None
+
+    if price >= ep["peak"] * (1 - recover / 100):
+        st["episode"] = {"active": False}  # recovered — episode over
+        return None
+
+    if (not ep.get("rebound_alerted")
+            and price >= ep["trough"] * (1 + bounce / 100)):
+        ep["rebound_alerted"] = True
+        depth = (ep["peak"] - ep["trough"]) / ep["peak"] * 100
+        up = (price - ep["trough"]) / ep["trough"] * 100
+        return (f"price turned up {up:.1f}% from the trough of "
+                f"${ep['trough']:.2f} ({depth:.1f}% below the "
+                f"${ep['peak']:.2f} peak, trough seen {ep['trough_at']})")
+    return None
+
+
+def buy_context(price, history):
+    """One reusable block that helps judge entry quality at a glance."""
+    today = now_utc().date()
+    closes = [c for d, c in history if d < today]
+    if len(closes) < 10:
+        return "_Not enough history for context._"
+    hi, lo = max(closes), min(closes)
+    span = hi - lo
+    pos = (price - lo) / span * 100 if span else 50.0
+    drop = (hi - price) / hi * 100
+    mean = sum(closes) / len(closes)
+    vs_avg = (price - mean) / mean * 100
+    return (f"**Buy context (3-month window):** "
+            f"{drop:.1f}% below the high (${hi:.2f}) · "
+            f"sitting at the {pos:.0f}th percentile of the "
+            f"${lo:.2f}–${hi:.2f} range · "
+            f"{vs_avg:+.1f}% vs the 3-month average (${mean:.2f})")
+
+
 def append_log(ticker, price, currency, source):
     new = not os.path.exists(LOG_FILE)
     with open(LOG_FILE, "a", newline="") as f:
@@ -180,6 +257,26 @@ def main():
                   f"logged, no alert check")
             continue
 
+        st = state.setdefault(ticker, {})
+
+        # --- rebound (turn off the trough) — independent of dip alerts ---
+        if mode == "auto":
+            reb = evaluate_rebound(price, history, cfg, st)
+            if reb:
+                title = f"🟢 {ticker} rebound signal — ${price:.2f}"
+                body = (f"**Possible bottom:** {reb}\n\n"
+                        f"{buy_context(price, history)}\n\n"
+                        f"A rebound signal means the decline paused and "
+                        f"turned, not that it can't resume. If a new low "
+                        f"forms, this signal re-arms and fires again on "
+                        f"the next turn.")
+                try:
+                    if send_alert(title, body):
+                        print(f"{ticker}: REBOUND ALERT SENT at ${price}")
+                except Exception as e:  # noqa: BLE001
+                    print(f"{ticker}: rebound issue failed: {e}",
+                          file=sys.stderr)
+
         # --- trigger logic ---
         triggered, fired = False, []
         if mode == "manual":
@@ -196,7 +293,6 @@ def main():
             continue
 
         # --- dedup: no repeat within 24h unless dip deepened > 0.5% ---
-        st = state.setdefault(ticker, {})
         last_at = st.get("last_alert_at")
         last_price = st.get("last_alert_price")
         if last_at:
@@ -213,6 +309,7 @@ def main():
         title = f"📉 {ticker} dip alert — ${price:.2f}{strength}"
         reasons = "\n".join(f"- {r}" for r in fired)
         body = (f"**Signals fired:**\n\n{reasons}\n\n"
+                f"{buy_context(price, history)}\n\n"
                 f"**Price:** ${price:.2f} "
                 f"(quote time {mkt_time:%Y-%m-%d %H:%M} UTC)\n\n"
                 f"To change thresholds, edit `config.json` "
