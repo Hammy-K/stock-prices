@@ -5,8 +5,8 @@
     "episode": {
       "active": true,
       "peak": 736.7000122070312,
-      "trough": 680.8,
-      "trough_at": "2026-07-28T17:39:13+00:00",
+      "trough": 679.0,
+      "trough_at": "2026-07-29T09:40:55+00:00",
       "rebound_alerted": false
     }
   },
