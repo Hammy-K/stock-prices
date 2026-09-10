@@ -1,13 +1,13 @@
 {
   "EQQQ": {
-    "last_alert_at": "2026-09-02T12:01:29+00:00",
-    "last_alert_price": 708.3,
+    "last_alert_at": "2026-09-10T16:56:13+00:00",
+    "last_alert_price": 714.8,
     "episode": {
       "active": false
     }
   },
   "URTH": {
-    "last_alert_at": "2026-09-09T17:05:10+00:00",
-    "last_alert_price": 207.51
+    "last_alert_at": "2026-09-10T16:56:12+00:00",
+    "last_alert_price": 206.275
   }
 }
