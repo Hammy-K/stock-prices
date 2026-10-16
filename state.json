@@ -1,12 +1,12 @@
 {
   "EQQQ": {
-    "last_alert_at": "2026-10-15T12:32:44+00:00",
-    "last_alert_price": 724.2,
+    "last_alert_at": "2026-10-16T17:14:59+00:00",
+    "last_alert_price": 722.5,
     "episode": {
       "active": true,
       "peak": 766.0999755859375,
-      "trough": 724.2,
-      "trough_at": "2026-10-15T12:32:44+00:00",
+      "trough": 722.5,
+      "trough_at": "2026-10-16T17:14:58+00:00",
       "rebound_alerted": false
     }
   },
