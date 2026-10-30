@@ -5,13 +5,13 @@
     "episode": {
       "active": true,
       "peak": 766.0999755859375,
-      "trough": 697.5,
-      "trough_at": "2026-10-30T13:55:51+00:00",
+      "trough": 695.7,
+      "trough_at": "2026-10-30T19:06:27+00:00",
       "rebound_alerted": false
     }
   },
   "URTH": {
-    "last_alert_at": "2026-10-30T13:55:51+00:00",
-    "last_alert_price": 205.73
+    "last_alert_at": "2026-10-30T19:06:27+00:00",
+    "last_alert_price": 203.7
   }
 }
