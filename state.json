@@ -11,13 +11,13 @@
     }
   },
   "URTH": {
-    "last_alert_at": "2026-11-17T16:47:02+00:00",
-    "last_alert_price": 198.39,
+    "last_alert_at": "2026-11-18T16:17:57+00:00",
+    "last_alert_price": 197.21,
     "episode": {
       "active": true,
       "peak": 209.72999572753906,
-      "trough": 198.39,
-      "trough_at": "2026-11-17T16:47:02+00:00",
+      "trough": 197.21,
+      "trough_at": "2026-11-18T16:17:56+00:00",
       "rebound_alerted": false
     }
   }
