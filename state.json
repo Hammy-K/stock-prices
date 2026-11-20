@@ -1,23 +1,23 @@
 {
   "EQQQ": {
-    "last_alert_at": "2026-11-19T16:26:49+00:00",
-    "last_alert_price": 664.1,
+    "last_alert_at": "2026-11-20T15:58:27+00:00",
+    "last_alert_price": 634.2,
     "episode": {
       "active": true,
       "peak": 766.0999755859375,
-      "trough": 657.5,
-      "trough_at": "2026-11-17T16:47:02+00:00",
+      "trough": 634.2,
+      "trough_at": "2026-11-20T15:58:26+00:00",
       "rebound_alerted": false
     }
   },
   "URTH": {
-    "last_alert_at": "2026-11-19T23:26:57+00:00",
-    "last_alert_price": 193.91,
+    "last_alert_at": "2026-11-20T15:58:26+00:00",
+    "last_alert_price": 191.575,
     "episode": {
       "active": true,
       "peak": 209.72999572753906,
-      "trough": 193.91,
-      "trough_at": "2026-11-19T23:26:56+00:00",
+      "trough": 191.575,
+      "trough_at": "2026-11-20T15:58:26+00:00",
       "rebound_alerted": false
     }
   }
