@@ -7,7 +7,7 @@
       "peak": 766.0999755859375,
       "trough": 613.3,
       "trough_at": "2026-11-25T17:52:37+00:00",
-      "rebound_alerted": false
+      "rebound_alerted": true
     }
   },
   "URTH": {
