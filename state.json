@@ -1,7 +1,7 @@
 {
   "EQQQ": {
-    "last_alert_at": "2026-11-25T17:52:38+00:00",
-    "last_alert_price": 613.3,
+    "last_alert_at": "2026-11-27T17:19:32+00:00",
+    "last_alert_price": 649.8,
     "episode": {
       "active": true,
       "peak": 766.0999755859375,
@@ -11,8 +11,8 @@
     }
   },
   "URTH": {
-    "last_alert_at": "2026-11-25T17:52:37+00:00",
-    "last_alert_price": 192.91,
+    "last_alert_at": "2026-11-27T17:19:31+00:00",
+    "last_alert_price": 196.865,
     "episode": {
       "active": true,
       "peak": 209.72999572753906,
